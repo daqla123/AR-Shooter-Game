@@ -311,17 +311,17 @@ function reload() {
 
 // ==================== 子弹系统 ====================
 function createBullet() {
-    // 从屏幕底部中央发射，向右上方射向兔子
-    const startX = elements.canvas.width / 2;
-    const startY = elements.canvas.height - 100;
+    // 横版：从左侧发射，向右飞行
+    const startX = 60; // 左侧玩家位置
+    const startY = elements.canvas.height / 2;
     
     GameState.bullets.push({
         x: startX,
         y: startY,
-        vx: 8 + Math.random() * 4,
-        vy: -3 - Math.random() * 2,
-        width: 8,
-        height: 20,
+        vx: 12, // 向右飞
+        vy: 0,  // 水平直线
+        width: 20,
+        height: 6,
         active: true
     });
 }
@@ -337,8 +337,8 @@ function updateBullets() {
             bullet.active = false;
         }
         
-        // 移除超出屏幕的子弹
-        if (bullet.x > elements.canvas.width + 50 || bullet.y < -50 || !bullet.active) {
+        // 移除超出屏幕的子弹（向右飞出屏幕）
+        if (bullet.x > elements.canvas.width + 50 || !bullet.active) {
             GameState.bullets.splice(i, 1);
         }
     }
@@ -436,23 +436,23 @@ function updateRabbits() {
 
 // ==================== 萝卜系统 ====================
 function throwCarrot(rabbit) {
-    if (!GameState.faceBounds) return;
+    // 萝卜朝左侧玩家方向扔（不管有没有检测到人脸）
+    const canvasHeight = elements.canvas.height;
+    const targetX = 80; // 玩家位置在左侧
+    const targetY = canvasHeight / 2 + (Math.random() - 0.5) * 200; // 随机高度
     
-    const fb = GameState.faceBounds;
-    const targetX = fb.centerX;
-    const targetY = fb.centerY;
-    
+    const rabbitY = rabbit.y + Math.sin(rabbit.hopOffset) * rabbit.hopHeight;
     const dx = targetX - rabbit.x;
-    const dy = targetY - (rabbit.y + Math.sin(rabbit.hopOffset) * rabbit.hopHeight);
+    const dy = targetY - rabbitY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     
-    const speed = 5 * GameState.difficulty;
+    const speed = 4 * GameState.difficulty;
     const vx = (dx / dist) * speed;
     const vy = (dy / dist) * speed;
     
     GameState.carrots.push({
         x: rabbit.x,
-        y: rabbit.y + Math.sin(rabbit.hopOffset) * rabbit.hopHeight,
+        y: rabbitY,
         vx: vx,
         vy: vy,
         size: 15,
@@ -484,18 +484,20 @@ function updateCarrots() {
 }
 
 function checkCarrotHitFace(carrot) {
-    if (!GameState.faceBounds) return false;
+    // 横版：检测萝卜是否击中左侧玩家区域
+    const playerX = 80; // 玩家在左侧
+    const playerY = elements.canvas.height / 2;
+    const playerRadius = 60; // 玩家判定区域
     
-    const fb = GameState.faceBounds;
-    const dx = carrot.x - fb.centerX;
-    const dy = carrot.y - fb.centerY;
+    const dx = carrot.x - playerX;
+    const dy = carrot.y - playerY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     
-    // 萝卜击中人脸判定区域
-    if (dist < fb.width / 2 + carrot.size) {
+    // 萝卜击中玩家判定区域
+    if (dist < playerRadius + carrot.size) {
         GameState.health = Math.max(0, GameState.health - 15);
         AudioSys.playCarrotHit();
-        showHitEffect(fb.centerX, fb.centerY, 'damage');
+        showHitEffect(playerX, playerY, 'damage');
         updateUI();
         
         // 检查游戏结束
@@ -764,27 +766,26 @@ function drawCarrots() {
 function drawBullets() {
     for (const bullet of GameState.bullets) {
         ctx.save();
+        ctx.translate(bullet.x, bullet.y);
         
         // 子弹光晕
-        const gradient = ctx.createRadialGradient(
-            bullet.x, bullet.y, 0,
-            bullet.x, bullet.y, 20
-        );
+        const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 15);
         gradient.addColorStop(0, 'rgba(255, 235, 59, 0.8)');
         gradient.addColorStop(0.5, 'rgba(255, 152, 0, 0.4)');
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
         
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(bullet.x, bullet.y, 20, 0, Math.PI * 2);
+        ctx.arc(0, 0, 15, 0, Math.PI * 2);
         ctx.fill();
         
-        // 子弹主体
+        // 子弹主体（横版：水平方向）
         ctx.fillStyle = '#ffeb3b';
         ctx.shadowColor = '#ff9800';
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 10;
+        // 水平绘制：width是长度，height是粗细
         ctx.beginPath();
-        ctx.roundRect(bullet.x - bullet.width/2, bullet.y - bullet.height/2, bullet.width, bullet.height, 3);
+        ctx.roundRect(0, -bullet.height/2, bullet.width, bullet.height, 3);
         ctx.fill();
         
         ctx.restore();
@@ -792,31 +793,35 @@ function drawBullets() {
 }
 
 function drawCrosshair() {
-    if (!GameState.canFire) return;
-    
-    const x = elements.canvas.width / 2;
-    const y = elements.canvas.height - 150;
+    // 横版：准星在左侧玩家位置
+    const x = 80;
+    const y = elements.canvas.height / 2;
     
     ctx.save();
     ctx.strokeStyle = GameState.gunDetected ? '#4CAF50' : '#ff9800';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.shadowColor = ctx.strokeStyle;
     ctx.shadowBlur = 10;
     
-    const size = 20;
+    const size = 25;
     
-    // 十字准星
+    // 十字准星（指向右侧）
     ctx.beginPath();
-    ctx.moveTo(x - size, y);
-    ctx.lineTo(x + size, y);
     ctx.moveTo(x, y - size);
     ctx.lineTo(x, y + size);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + size * 1.5, y);
     ctx.stroke();
     
     // 圆圈
     ctx.beginPath();
     ctx.arc(x, y, size * 0.7, 0, Math.PI * 2);
     ctx.stroke();
+    
+    // 玩家图标
+    ctx.fillStyle = GameState.gunDetected ? '#4CAF50' : '#ff9800';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('🧑', x - 10, y + 45);
     
     ctx.restore();
 }
