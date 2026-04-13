@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AR 人脸射击游戏</title>
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <!-- MediaPipe Face Detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/face_detection.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.16400290/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js"></script>
+    <!-- MediaPipe Hands -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- 视频层 -->
+        <video id="video" playsinline autoplay muted></video>
+        
+        <!-- 游戏画布层 -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- UI层 -->
+        <div id="uiLayer">
+            <div id="scoreBoard">
+                <div class="score">得分: <span id="score">0</span></div>
+                <div class="score">失分: <span id="penalty">0</span></div>
+            </div>
+            
+            <div id="gestureIndicator">
+                <div id="gunStatus">🔫 枪势: <span id="gunDetected">未检测</span></div>
+                <div id="fireStatus">🔥 射击: <span id="fireReady">准备</span></div>
+            </div>
+            
+            <div id="ammoDisplay">
+                <span id="ammo">🔫🔫🔫🔫🔫</span>
+            </div>
+        </div>
+        
+        <!-- 开始界面 -->
+        <div id="startScreen">
+            <div class="startContent">
+                <h1>🎯 AR 人脸射击游戏</h1>
+                <p>📱 请允许摄像头权限</p>
+                <p>👆 比出枪势（拇指+食指）并上抬射击</p>
+                <p>⚠️ 避开人脸，击中人脸会失分！</p>
+                <button id="startBtn">开始游戏</button>
+            </div>
+        </div>
+        
+        <!-- 加载界面 -->
+        <div id="loadingScreen">
+            <div class="loadingContent">
+                <div class="spinner"></div>
+                <p>正在加载AI模型...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/game.js"></script>
+</body>
+</html>
