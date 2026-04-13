@@ -12,23 +12,7 @@ html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-@media (orientation: portrait) {
-    body::before {
-        content: "📱 请横屏游玩";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #1a472a;
-        color: #fff;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 24px;
-        z-index: 9999;
-    }
-}
+/* 横竖屏都支持 */
 
 #gameContainer {
     position: relative;
