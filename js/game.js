@@ -521,30 +521,40 @@ function updateCarrots() {
 }
 
 function checkCarrotHitFace(carrot) {
-    // 检测萝卜是否击中人脸区域
-    let hitX, hitY, hitRadius;
+    // 检测萝卜是否碰到脸部轮廓（椭圆碰撞检测）
+    let fb;
     
     if (GameState.faceBounds) {
-        // 使用检测到的人脸位置
-        hitX = GameState.faceBounds.centerX;
-        hitY = GameState.faceBounds.centerY;
-        hitRadius = Math.min(GameState.faceBounds.width, GameState.faceBounds.height) / 2;
+        fb = GameState.faceBounds;
     } else {
-        // 默认位置：屏幕左侧
-        hitX = 80;
-        hitY = elements.canvas.height / 2;
-        hitRadius = 60;
+        // 默认位置：屏幕中央
+        fb = {
+            centerX: elements.canvas.width / 2,
+            centerY: elements.canvas.height / 2,
+            width: 120,
+            height: 150
+        };
     }
     
-    const dx = carrot.x - hitX;
-    const dy = carrot.y - hitY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    // 椭圆碰撞检测 - 检测萝卜是否碰到脸部轮廓区域
+    const halfWidth = fb.width / 2;
+    const halfHeight = fb.height / 2;
     
-    // 萝卜击中判定
-    if (dist < hitRadius + carrot.size) {
+    // 将萝卜位置转换到椭圆坐标系
+    const dx = carrot.x - fb.centerX;
+    const dy = carrot.y - fb.centerY;
+    
+    // 椭圆方程检测：(x/a)² + (y/b)² <= 1 表示在椭圆内部
+    // 加上萝卜半径，检测轮廓碰撞
+    const ellipseValue = (dx * dx) / ((halfWidth + carrot.size) * (halfWidth + carrot.size)) +
+                         (dy * dy) / ((halfHeight + carrot.size) * (halfHeight + carrot.size));
+    
+    // 萝卜击中判定 - 碰到轮廓或进入轮廓内部都算
+    if (ellipseValue <= 1) {
         GameState.health = Math.max(0, GameState.health - 15);
         AudioSys.playCarrotHit();
-        showHitEffect(hitX, hitY, 'damage');
+        // 在碰撞点显示伤害效果
+        showHitEffect(carrot.x, carrot.y, 'damage');
         updateUI();
         
         // 检查游戏结束
@@ -684,7 +694,7 @@ function drawFaceArea() {
     
     ctx.save();
     
-    // 只绘制边框，不画填充（脸不透明，能看到自己）
+    // 绘制脸部轮廓框（实时根据人脸大小变化）
     ctx.strokeStyle = '#00BFFF';
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -697,10 +707,26 @@ function drawFaceArea() {
     );
     ctx.stroke();
     
-    // 四个角的标记
+    // 绘制发光效果增强轮廓可见度
+    ctx.shadowColor = '#00BFFF';
+    ctx.shadowBlur = 15;
+    ctx.strokeStyle = 'rgba(0, 191, 255, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(
+        fb.centerX,
+        fb.centerY,
+        fb.width / 2 + 5,
+        fb.height / 2 + 5,
+        0, 0, Math.PI * 2
+    );
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    // 四个角的标记（科技风格）
     ctx.strokeStyle = '#00BFFF';
-    ctx.lineWidth = 3;
-    const cornerSize = 15;
+    ctx.lineWidth = 4;
+    const cornerSize = 20;
     const x = fb.x;
     const y = fb.y;
     const w = fb.width;
@@ -734,11 +760,17 @@ function drawFaceArea() {
     ctx.lineTo(x + w, y + h - cornerSize);
     ctx.stroke();
     
-    // 绘制"脸"文字
+    // 绘制"脸"文字和距离提示
     ctx.fillStyle = '#00BFFF';
     ctx.font = 'bold 18px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('你的脸', fb.centerX, fb.y - 10);
+    ctx.fillText('你的脸', fb.centerX, fb.y - 15);
+    
+    // 显示轮廓大小（距离感）
+    ctx.font = '14px Arial';
+    ctx.fillStyle = 'rgba(0, 191, 255, 0.8)';
+    const distanceText = fb.width > 150 ? '近' : fb.width > 80 ? '中' : '远';
+    ctx.fillText(`距离: ${distanceText}`, fb.centerX, fb.y + h + 20);
     
     ctx.restore();
 }
