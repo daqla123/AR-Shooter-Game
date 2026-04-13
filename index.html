@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR 人脸射击游戏</title>
+    <title>AR 兔子射击游戏</title>
     <!-- TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
     <!-- MediaPipe Face Detection -->
@@ -26,7 +26,12 @@
         <div id="uiLayer">
             <div id="scoreBoard">
                 <div class="score">得分: <span id="score">0</span></div>
-                <div class="score">失分: <span id="penalty">0</span></div>
+                <div class="health-bar-container">
+                    <div class="health-label">HP: <span id="health">100</span></div>
+                    <div class="health-bar-bg">
+                        <div class="health-bar" id="healthBar"></div>
+                    </div>
+                </div>
             </div>
             
             <div id="gestureIndicator">
@@ -42,10 +47,11 @@
         <!-- 开始界面 -->
         <div id="startScreen">
             <div class="startContent">
-                <h1>🎯 AR 人脸射击游戏</h1>
+                <h1>🐰 AR 兔子射击游戏</h1>
                 <p>📱 请允许摄像头权限</p>
                 <p>👆 比出枪势（拇指+食指）并上抬射击</p>
-                <p>⚠️ 避开人脸，击中人脸会失分！</p>
+                <p>🥕 兔子会扔萝卜，被击中会扣血！</p>
+                <p>🎯 射击消灭兔子得分</p>
                 <button id="startBtn">开始游戏</button>
             </div>
         </div>
