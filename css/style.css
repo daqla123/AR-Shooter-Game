@@ -12,7 +12,6 @@ html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* 强制横屏提示 */
 @media (orientation: portrait) {
     body::before {
         content: "📱 请横屏游玩";
@@ -38,7 +37,6 @@ html, body {
     overflow: hidden;
 }
 
-/* 视频层 */
 #video {
     position: absolute;
     top: 0;
@@ -46,11 +44,10 @@ html, body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scaleX(-1); /* 镜像翻转 */
+    transform: scaleX(-1);
     z-index: 1;
 }
 
-/* 游戏画布层 */
 #gameCanvas {
     position: absolute;
     top: 0;
@@ -58,10 +55,9 @@ html, body {
     width: 100%;
     height: 100%;
     z-index: 2;
-    transform: scaleX(-1); /* 镜像翻转匹配视频 */
+    transform: scaleX(-1);
 }
 
-/* UI层 */
 #uiLayer {
     position: absolute;
     top: 0;
@@ -72,7 +68,6 @@ html, body {
     pointer-events: none;
 }
 
-/* 分数板 */
 #scoreBoard {
     position: absolute;
     top: 20px;
@@ -92,13 +87,40 @@ html, body {
 
 .score span {
     color: #4CAF50;
+    font-size: 24px;
 }
 
-.score:last-child span {
-    color: #f44336;
+.health-bar-container {
+    margin-top: 10px;
 }
 
-/* 手势指示器 */
+.health-label {
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.health-label span {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.health-bar-bg {
+    width: 150px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.health-bar {
+    height: 100%;
+    width: 100%;
+    background: #4CAF50;
+    border-radius: 6px;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
 #gestureIndicator {
     position: absolute;
     top: 20px;
@@ -115,15 +137,9 @@ html, body {
     font-size: 16px;
 }
 
-#gunStatus.active {
-    color: #4CAF50;
-}
+#gunStatus.active { color: #4CAF50; }
+#fireStatus.active { color: #ff9800; }
 
-#fireStatus.active {
-    color: #ff9800;
-}
-
-/* 弹药显示 */
 #ammoDisplay {
     position: absolute;
     bottom: 30px;
@@ -133,7 +149,6 @@ html, body {
     letter-spacing: 5px;
 }
 
-/* 开始界面 */
 #startScreen {
     position: absolute;
     top: 0;
@@ -185,11 +200,6 @@ html, body {
     box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
 
-#startBtn:active {
-    transform: translateY(0);
-}
-
-/* 加载界面 */
 #loadingScreen {
     position: absolute;
     top: 0;
@@ -204,9 +214,7 @@ html, body {
     pointer-events: auto;
 }
 
-#loadingScreen.show {
-    display: flex;
-}
+#loadingScreen.show { display: flex; }
 
 .loadingContent {
     text-align: center;
@@ -228,87 +236,33 @@ html, body {
     to { transform: rotate(360deg); }
 }
 
-/* 进度条 */
-.progressContainer {
+.progressBarContainer {
     width: 280px;
     height: 10px;
     background: rgba(255,255,255,0.2);
     border-radius: 5px;
     margin: 20px auto;
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.3);
 }
 
 .progressBar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #4CAF50, #8BC34A, #CDDC39);
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
     border-radius: 5px;
     transition: width 0.3s ease;
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
 }
 
-.progressPercent {
-    font-size: 20px;
+.progressText {
+    font-size: 18px;
     color: #4CAF50;
-    font-weight: bold;
     margin-top: 10px;
 }
 
-/* 人脸区域标记 */
-.faceZone {
-    position: absolute;
-    border: 3px solid rgba(255, 0, 0, 0.5);
-    border-radius: 50%;
-    background: rgba(255, 0, 0, 0.1);
-    pointer-events: none;
-}
-
-/* 击中效果 */
-.hitEffect {
-    animation: hitFlash 0.3s ease-out;
-}
-
-@keyframes hitFlash {
-    0% { background: rgba(255, 0, 0, 0.8); }
-    100% { background: transparent; }
-}
-
-/* 子弹效果 */
-.bullet {
-    position: absolute;
-    width: 10px;
-    height: 30px;
-    background: linear-gradient(to bottom, #ffeb3b, #ff9800);
-    border-radius: 5px;
-    box-shadow: 0 0 20px #ffeb3b;
-}
-
-/* 目标 */
-.target {
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    background: radial-gradient(circle, #ff6b6b, #ee5a24);
-    border-radius: 50%;
-    box-shadow: 0 0 20px rgba(238, 90, 36, 0.6);
-}
-
-/* 响应式 */
 @media (max-width: 480px) {
-    .startContent h1 {
-        font-size: 28px;
-    }
-    
-    .startContent p {
-        font-size: 14px;
-    }
-    
-    #scoreBoard, #gestureIndicator {
-        padding: 10px 15px;
-    }
-    
-    .score, #gestureIndicator div {
-        font-size: 14px;
-    }
+    .startContent h1 { font-size: 28px; }
+    .startContent p { font-size: 14px; }
+    #scoreBoard, #gestureIndicator { padding: 10px 15px; }
+    .score, #gestureIndicator div { font-size: 14px; }
+    .health-bar-bg { width: 120px; }
 }
