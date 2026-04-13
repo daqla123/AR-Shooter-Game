@@ -217,11 +217,6 @@ function initFaceDetection() {
                 centerX: smallX + smallW / 2,
                 centerY: smallY + smallH / 2
             };
-                width: faceW + padding * 2,
-                height: faceH + padding * 2,
-                centerX: faceX + faceW / 2,
-                centerY: faceY + faceH / 2
-            };
         } else {
             GameState.faceBounds = null;
         }
