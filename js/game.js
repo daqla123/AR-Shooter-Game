@@ -9,27 +9,18 @@ const GameState = {
     score: 0,
     health: 100,
     maxHealth: 100,
-    ammo: 5,
     isPlaying: false,
     isLoading: false,
     faceDetected: false,
-    gunDetected: false,
-    canFire: false,
-    lastFireTime: 0,
-    fireCooldown: 400,
-    bullets: [],
     rabbits: [],
     carrots: [],
     faceBounds: null,
-    handPosition: null,
-    lastHandY: null,
-    gunRaiseThreshold: 30,
-    reloadTime: 2000,
-    isReloading: false,
+    fingerPosition: null,  // 食指指尖位置
+    fingerOnRabbit: null,  // 手指正在指向的兔子
+    fingerStartTime: 0,    // 手指放上兔子的开始时间
     gameTime: 0,
     rabbitSpawnTimer: 0,
-    rabbitSpawnInterval: 2000,
-    difficulty: 1
+    rabbitSpawnInterval: 2000
 };
 
 // ==================== DOM元素 ====================
@@ -243,28 +234,89 @@ function initHands() {
     hands.onResults((results) => {
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
             const landmarks = results.multiHandLandmarks[0];
-            detectGunGesture(landmarks);
+            const indexTip = landmarks[8]; // 食指指尖
             
-            const wrist = landmarks[0];
+            // 转换为屏幕坐标（考虑镜像）
+            const canvasWidth = elements.canvas.width;
             const canvasHeight = elements.canvas.height;
-            const currentY = wrist.y * canvasHeight;
             
-            if (GameState.lastHandY !== null) {
-                const deltaY = GameState.lastHandY - currentY;
-                if (GameState.gunDetected && deltaY > GameState.gunRaiseThreshold) {
-                    tryFire();
-                }
+            const videoAspect = elements.video.videoWidth / elements.video.videoHeight;
+            const screenAspect = canvasWidth / canvasHeight;
+            
+            let scaleX, scaleY, offsetX = 0, offsetY = 0;
+            
+            if (videoAspect > screenAspect) {
+                scaleY = canvasHeight;
+                scaleX = scaleY * videoAspect;
+                offsetX = (canvasWidth - scaleX) / 2;
+            } else {
+                scaleX = canvasWidth;
+                scaleY = scaleX / videoAspect;
+                offsetY = (canvasHeight - scaleY) / 2;
             }
-            GameState.lastHandY = currentY;
-            GameState.handPosition = { x: wrist.x, y: wrist.y };
+            
+            // 镜像翻转x坐标
+            GameState.fingerPosition = {
+                x: offsetX + (1 - indexTip.x) * scaleX,
+                y: offsetY + indexTip.y * scaleY
+            };
+            
+            checkFingerOnRabbit();
         } else {
-            GameState.gunDetected = false;
-            GameState.canFire = false;
-            GameState.lastHandY = null;
-            GameState.handPosition = null;
+            GameState.fingerPosition = null;
+            GameState.fingerOnRabbit = null;
         }
-        updateUI();
     });
+}
+
+// ==================== 手指停留检测 ====================
+function checkFingerOnRabbit() {
+    if (!GameState.fingerPosition) return;
+    
+    const fx = GameState.fingerPosition.x;
+    const fy = GameState.fingerPosition.y;
+    let targetRabbit = null;
+    
+    // 查找手指下方的兔子
+    for (const rabbit of GameState.rabbits) {
+        const dx = fx - rabbit.x;
+        const dy = fy - rabbit.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < rabbit.size * 1.5) {
+            targetRabbit = rabbit;
+            break;
+        }
+    }
+    
+    const now = Date.now();
+    
+    if (targetRabbit) {
+        if (GameState.fingerOnRabbit !== targetRabbit) {
+            // 手指移到新兔子上，重置计时
+            GameState.fingerOnRabbit = targetRabbit;
+            GameState.fingerStartTime = now;
+        } else {
+            // 手指停留在同一只兔子上，检查是否满0.5秒
+            if (now - GameState.fingerStartTime >= 500) {
+                killRabbit(targetRabbit);
+                GameState.fingerOnRabbit = null;
+            }
+        }
+    } else {
+        GameState.fingerOnRabbit = null;
+    }
+}
+
+function killRabbit(rabbit) {
+    const index = GameState.rabbits.indexOf(rabbit);
+    if (index > -1) {
+        GameState.rabbits.splice(index, 1);
+        GameState.score += 100;
+        AudioSys.playHit();
+        showHitEffect(rabbit.x, rabbit.y, 'kill');
+        updateUI();
+    }
 }
 
 // ==================== 枪势检测 ====================
@@ -433,8 +485,7 @@ function spawnRabbit() {
         y: y,
         size: size,
         speed: speed,
-        health: Math.floor(GameState.difficulty),
-        maxHealth: Math.floor(GameState.difficulty),
+        spawnTime: now,
         lastThrowTime: 0,
         throwInterval: 1500 + Math.random() * 1000,
         hopOffset: Math.random() * Math.PI * 2,
@@ -458,10 +509,22 @@ function updateRabbits() {
         rabbit.hopOffset += rabbit.hopSpeed;
         const hopY = Math.sin(rabbit.hopOffset) * rabbit.hopHeight;
         
+        // 计算兔子存活时间（秒）
+        const aliveTime = (now - rabbit.spawnTime) / 1000;
+        
+        // 根据存活时间增加扔萝卜频率和数量
+        // 每5秒增加一个难度等级
+        const difficultyLevel = Math.floor(aliveTime / 5) + 1;
+        const throwCount = Math.min(difficultyLevel, 3); // 最多一次扔3个
+        const throwInterval = Math.max(500, 1500 - difficultyLevel * 200); // 最快0.5秒扔一次
+        
         // 扔萝卜
-        if (now - rabbit.lastThrowTime > rabbit.throwInterval) {
+        if (now - rabbit.lastThrowTime > throwInterval) {
             rabbit.lastThrowTime = now;
-            throwCarrot(rabbit);
+            // 连续扔多个萝卜
+            for (let j = 0; j < throwCount; j++) {
+                setTimeout(() => throwCarrot(rabbit), j * 100);
+            }
         }
         
         // 移除离开屏幕的兔子
@@ -650,12 +713,10 @@ function gameOver() {
 function resetGame() {
     GameState.score = 0;
     GameState.health = GameState.maxHealth;
-    GameState.ammo = 5;
-    GameState.bullets = [];
     GameState.rabbits = [];
     GameState.carrots = [];
-    GameState.isReloading = false;
-    GameState.difficulty = 1;
+    GameState.fingerPosition = null;
+    GameState.fingerOnRabbit = null;
     GameState.rabbitSpawnInterval = 2000;
     updateUI();
 }
@@ -676,11 +737,42 @@ function draw() {
     // 绘制萝卜
     drawCarrots();
     
-    // 绘制子弹
-    drawBullets();
+    // 绘制手指
+    drawFinger();
+}
+
+function drawFinger() {
+    if (!GameState.fingerPosition) return;
     
-    // 绘制准星
-    drawCrosshair();
+    const x = GameState.fingerPosition.x;
+    const y = GameState.fingerPosition.y;
+    
+    ctx.save();
+    
+    // 绘制手指圆圈
+    ctx.strokeStyle = '#FF5722';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // 填充半透明白色
+    ctx.fillStyle = 'rgba(255, 87, 34, 0.3)';
+    ctx.fill();
+    
+    // 绘制进度圆环（如果有手指在兔子上）
+    if (GameState.fingerOnRabbit) {
+        const elapsed = Date.now() - GameState.fingerStartTime;
+        const progress = Math.min(elapsed / 500, 1);
+        
+        ctx.beginPath();
+        ctx.arc(x, y, 25, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+        ctx.strokeStyle = '#4CAF50';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+    }
+    
+    ctx.restore();
 }
 
 function drawBackground() {
@@ -844,17 +936,16 @@ function drawRabbits() {
         ctx.arc(x, y + size * 0.1, size * 0.08, 0, Math.PI * 2);
         ctx.fill();
         
-        // 血条
-        if (rabbit.maxHealth > 1) {
-            const barWidth = size * 1.2;
-            const barHeight = 6;
-            const healthRatio = rabbit.health / rabbit.maxHealth;
+        // 手指停留进度环
+        if (GameState.fingerOnRabbit === rabbit) {
+            const elapsed = Date.now() - GameState.fingerStartTime;
+            const progress = Math.min(elapsed / 500, 1);
             
-            ctx.fillStyle = '#333';
-            ctx.fillRect(x - barWidth / 2, y - size - 15, barWidth, barHeight);
-            
-            ctx.fillStyle = healthRatio > 0.5 ? '#4CAF50' : '#FF5722';
-            ctx.fillRect(x - barWidth / 2, y - size - 15, barWidth * healthRatio, barHeight);
+            ctx.beginPath();
+            ctx.arc(x, y - size, size * 0.8, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 4;
+            ctx.stroke();
         }
         
         ctx.restore();
@@ -1040,19 +1131,8 @@ function updateUI() {
     
     const fireReady = document.getElementById('fireReady');
     if (fireReady) {
-        fireReady.textContent = GameState.isReloading ? '换弹中...' : '点击射击';
+        fireReady.textContent = '👆 指住兔子0.5秒消灭';
     }
-    
-    const fireStatus = document.getElementById('fireStatus');
-    if (fireStatus) {
-        fireStatus.className = GameState.isReloading ? '' : 'active';
-    }
-    
-    let ammoStr = '';
-    for (let i = 0; i < 5; i++) {
-        ammoStr += i < GameState.ammo ? '🔫' : '⚫';
-    }
-    elements.ammo.textContent = ammoStr;
 }
 
 // ==================== 相机初始化 ====================
@@ -1097,21 +1177,13 @@ function gameLoop() {
     // 处理MediaPipe输入
     if (elements.video.readyState >= 2) {
         faceDetection.send({ image: elements.video });
+        hands.send({ image: elements.video });
     }
     
     // 更新游戏状态
     spawnRabbit();
     updateRabbits();
-    
-    // 自动生成萝卜飞向人脸
-    const now = Date.now();
-    if (now - lastCarrotSpawn > carrotSpawnInterval / GameState.difficulty) {
-        lastCarrotSpawn = now;
-        spawnCarrotFromEdge();
-    }
-    
     updateCarrots();
-    updateBullets();
     
     // 渲染
     draw();
@@ -1130,6 +1202,7 @@ async function startGame() {
         AudioSys.init();
         await initCamera();
         initFaceDetection();
+        initHands();  // 初始化手势检测
         
         // 极速启动
         await new Promise(r => setTimeout(r, 500));
@@ -1261,9 +1334,3 @@ elements.startBtn.addEventListener('click', startGame);
 document.addEventListener('touchmove', (e) => {
     e.preventDefault();
 }, { passive: false });
-
-elements.canvas.addEventListener('click', () => {
-    if (GameState.isPlaying && GameState.ammo > 0 && !GameState.isReloading) {
-        tryFire();
-    }
-});
