@@ -1197,6 +1197,112 @@ document.addEventListener('touchmove', (e) => {
     e.preventDefault();
 }, { passive: false });
 
+// ==================== 射击系统 ====================
+function tryFire() {
+    const now = Date.now();
+    if (now - GameState.lastFireTime < GameState.fireCooldown || GameState.isReloading) return;
+    
+    if (GameState.ammo <= 0) {
+        reload();
+        return;
+    }
+    
+    GameState.ammo--;
+    GameState.lastFireTime = now;
+    
+    // 从人脸位置发射子弹
+    let startX, startY;
+    if (GameState.faceBounds) {
+        startX = GameState.faceBounds.centerX;
+        startY = GameState.faceBounds.centerY;
+    } else {
+        startX = 80;
+        startY = elements.canvas.height / 2;
+    }
+    
+    GameState.bullets.push({
+        x: startX,
+        y: startY,
+        vx: 15,
+        vy: 0,
+        width: 25,
+        height: 6,
+        active: true
+    });
+    
+    AudioSys.playShoot();
+    updateUI();
+    
+    if (GameState.ammo <= 0) {
+        setTimeout(reload, 300);
+    }
+}
+
+function reload() {
+    if (GameState.isReloading) return;
+    GameState.isReloading = true;
+    updateUI();
+    
+    setTimeout(() => {
+        GameState.ammo = 5;
+        GameState.isReloading = false;
+        updateUI();
+    }, GameState.reloadTime);
+}
+
+function updateBullets() {
+    for (let i = GameState.bullets.length - 1; i >= 0; i--) {
+        const bullet = GameState.bullets[i];
+        bullet.x += bullet.vx;
+        
+        // 检测是否击中兔子
+        if (checkBulletHitRabbit(bullet)) {
+            bullet.active = false;
+        }
+        
+        // 移除离开屏幕的子弹
+        if (bullet.x > elements.canvas.width + 50 || !bullet.active) {
+            GameState.bullets.splice(i, 1);
+        }
+    }
+}
+
+function checkBulletHitRabbit(bullet) {
+    for (let i = GameState.rabbits.length - 1; i >= 0; i--) {
+        const rabbit = GameState.rabbits[i];
+        const dx = bullet.x - rabbit.x;
+        const dy = bullet.y - rabbit.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < rabbit.size + bullet.width) {
+            // 击中兔子
+            rabbit.health -= 34;
+            
+            if (rabbit.health <= 0) {
+                // 消灭兔子
+                GameState.score += 100;
+                GameState.rabbits.splice(i, 1);
+                AudioSys.playHit();
+                showHitEffect(rabbit.x, rabbit.y, 'kill');
+            } else {
+                AudioSys.playHit();
+                showHitEffect(rabbit.x, rabbit.y, 'hit');
+            }
+            
+            updateUI();
+            return true;
+        }
+    }
+    return false;
+}
+
+// ==================== 事件监听 ====================
+elements.startBtn.addEventListener('click', startGame);
+
+document.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+}, { passive: false });
+
 elements.canvas.addEventListener('click', () => {
     if (GameState.isPlaying && GameState.ammo > 0 && !GameState.isReloading) {
         tryFire();
