@@ -516,6 +516,61 @@ function updateRabbits() {
 }
 
 // ==================== 萝卜系统 ====================
+function spawnCarrotFromEdge() {
+    // 从屏幕四周生成萝卜，飞向人脸
+    const canvasWidth = elements.canvas.width;
+    const canvasHeight = elements.canvas.height;
+    
+    // 获取人脸位置（默认屏幕中央）
+    let targetX = canvasWidth / 2;
+    let targetY = canvasHeight / 2;
+    if (GameState.faceBounds) {
+        targetX = GameState.faceBounds.centerX;
+        targetY = GameState.faceBounds.centerY;
+    }
+    
+    // 随机从四个边生成
+    const edge = Math.floor(Math.random() * 4);
+    let startX, startY;
+    
+    switch(edge) {
+        case 0: // 上边
+            startX = Math.random() * canvasWidth;
+            startY = -30;
+            break;
+        case 1: // 右边
+            startX = canvasWidth + 30;
+            startY = Math.random() * canvasHeight;
+            break;
+        case 2: // 下边
+            startX = Math.random() * canvasWidth;
+            startY = canvasHeight + 30;
+            break;
+        case 3: // 左边
+            startX = -30;
+            startY = Math.random() * canvasHeight;
+            break;
+    }
+    
+    const dx = targetX - startX;
+    const dy = targetY - startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    const speed = (3 + Math.random() * 2) * GameState.difficulty;
+    
+    GameState.carrots.push({
+        x: startX,
+        y: startY,
+        vx: (dx / dist) * speed,
+        vy: (dy / dist) * speed,
+        size: 20,
+        rotation: 0,
+        rotationSpeed: 0.1 + Math.random() * 0.1
+    });
+    
+    AudioSys.playCarrotThrow();
+}
+
 function throwCarrot(rabbit) {
     // 萝卜朝检测到的人脸位置扔
     const rabbitY = rabbit.y + Math.sin(rabbit.hopOffset) * rabbit.hopHeight;
@@ -526,8 +581,7 @@ function throwCarrot(rabbit) {
         targetX = GameState.faceBounds.centerX;
         targetY = GameState.faceBounds.centerY;
     } else {
-        // 默认位置：屏幕左侧中央
-        targetX = 80;
+        targetX = elements.canvas.width / 2;
         targetY = elements.canvas.height / 2;
     }
     
@@ -709,10 +763,9 @@ function drawFaceArea() {
     
     ctx.save();
     
-    // 绘制人脸保护区域
-    ctx.strokeStyle = `rgba(0, 150, 255, ${0.5 + Math.sin(GameState.gameTime * 0.1) * 0.2})`;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([10, 5]);
+    // 只绘制边框，不画填充（脸不透明，能看到自己）
+    ctx.strokeStyle = '#00BFFF';
+    ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.ellipse(
         fb.centerX,
@@ -723,17 +776,48 @@ function drawFaceArea() {
     );
     ctx.stroke();
     
-    // 绘制护盾图标
-    ctx.fillStyle = 'rgba(0, 150, 255, 0.3)';
+    // 四个角的标记
+    ctx.strokeStyle = '#00BFFF';
+    ctx.lineWidth = 3;
+    const cornerSize = 15;
+    const x = fb.x;
+    const y = fb.y;
+    const w = fb.width;
+    const h = fb.height;
+    
+    // 左上角
     ctx.beginPath();
-    ctx.ellipse(
-        fb.centerX,
-        fb.centerY,
-        fb.width / 2,
-        fb.height / 2,
-        0, 0, Math.PI * 2
-    );
-    ctx.fill();
+    ctx.moveTo(x, y + cornerSize);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x + cornerSize, y);
+    ctx.stroke();
+    
+    // 右上角
+    ctx.beginPath();
+    ctx.moveTo(x + w - cornerSize, y);
+    ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + cornerSize);
+    ctx.stroke();
+    
+    // 左下角
+    ctx.beginPath();
+    ctx.moveTo(x, y + h - cornerSize);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x + cornerSize, y + h);
+    ctx.stroke();
+    
+    // 右下角
+    ctx.beginPath();
+    ctx.moveTo(x + w - cornerSize, y + h);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x + w, y + h - cornerSize);
+    ctx.stroke();
+    
+    // 绘制"脸"文字
+    ctx.fillStyle = '#00BFFF';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('你的脸', fb.centerX, fb.y - 10);
     
     ctx.restore();
 }
@@ -1041,6 +1125,9 @@ async function initCamera() {
 }
 
 // ==================== 游戏循环 ====================
+let lastCarrotSpawn = 0;
+const carrotSpawnInterval = 1500;
+
 function gameLoop() {
     if (!GameState.isPlaying) return;
     
@@ -1055,6 +1142,14 @@ function gameLoop() {
     // 更新游戏状态
     spawnRabbit();
     updateRabbits();
+    
+    // 自动生成萝卜飞向人脸
+    const now = Date.now();
+    if (now - lastCarrotSpawn > carrotSpawnInterval / GameState.difficulty) {
+        lastCarrotSpawn = now;
+        spawnCarrotFromEdge();
+    }
+    
     updateCarrots();
     updateBullets();
     
