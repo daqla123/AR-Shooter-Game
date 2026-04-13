@@ -149,7 +149,6 @@ const AudioSys = {
 
 // ==================== MediaPipe 人脸检测 ====================
 let faceDetection = null;
-let hands = null;
 
 function initFaceDetection() {
     faceDetection = new FaceDetection({
@@ -210,39 +209,6 @@ function initFaceDetection() {
             };
         } else {
             GameState.faceBounds = null;
-        }
-    });
-}
-
-// ==================== MediaPipe 手势检测 ====================
-function initHands() {
-    hands = new Hands({
-        locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1673529176/${file}`;
-        }
-    });
-    
-    hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-    });
-    
-    hands.onResults((results) => {
-        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            const landmarks = results.multiHandLandmarks[0];
-            const indexTip = landmarks[8]; // 食指指尖
-            
-            // 映射到 canvas 坐标（镜像处理，因为视频和 canvas 都是 scaleX(-1)）
-            const x = (1 - indexTip.x) * elements.canvas.width;
-            const y = indexTip.y * elements.canvas.height;
-            
-            GameState.fingerPosition = { x, y };
-            checkFingerOnRabbit();
-        } else {
-            GameState.fingerPosition = null;
-            GameState.fingerOnRabbit = null;
         }
     });
 }
@@ -977,7 +943,7 @@ function updateUI() {
     
     const fireReady = document.getElementById('fireReady');
     if (fireReady) {
-        fireReady.textContent = '☝️ 食指对准兔子0.5秒消灭';
+        fireReady.textContent = '👆 按住兔子0.5秒消灭';
     }
 }
 
@@ -1020,10 +986,9 @@ function gameLoop() {
     
     GameState.gameTime++;
     
-    // 处理MediaPipe人脸检测和手势检测
+    // 处理MediaPipe人脸检测
     if (elements.video.readyState >= 2) {
         faceDetection.send({ image: elements.video });
-        hands.send({ image: elements.video });
     }
     
     // 更新游戏状态
@@ -1048,8 +1013,7 @@ async function startGame() {
         AudioSys.init();
         await initCamera();
         initFaceDetection();
-        initHands();  // 初始化摄像头手势检测
-        setupTouchEvents();  // 同时保留触屏/鼠标调试支持
+        setupTouchEvents();  // 触屏/鼠标按住兔子消灭
         
         // 极速启动
         await new Promise(r => setTimeout(r, 500));
