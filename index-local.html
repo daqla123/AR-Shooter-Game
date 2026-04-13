@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AR 人脸射击游戏 - 本地版</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 本地版额外样式 */
+        .localBadge {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4CAF50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div class="localBadge">📱 本地版 - 无需网络</div>
+        
+        <!-- 视频层 -->
+        <video id="video" playsinline autoplay muted></video>
+        
+        <!-- 游戏画布层 -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- UI层 -->
+        <div id="uiLayer">
+            <div id="scoreBoard">
+                <div class="score">得分: <span id="score">0</span></div>
+                <div class="score">失分: <span id="penalty">0</span></div>
+            </div>
+            
+            <div id="gestureIndicator">
+                <div id="gunStatus">🔫 枪势: <span id="gunDetected">未检测</span></div>
+                <div id="fireStatus">🔥 射击: <span id="fireReady">准备</span></div>
+            </div>
+            
+            <div id="ammoDisplay">
+                <span id="ammo">🔫🔫🔫🔫🔫</span>
+            </div>
+        </div>
+        
+        <!-- 开始界面 -->
+        <div id="startScreen">
+            <div class="startContent">
+                <h1>🎯 AR 人脸射击游戏</h1>
+                <p style="color: #4CAF50; font-weight: bold;">✅ 本地版 - 无需下载模型</p>
+                <p>📱 请允许摄像头权限</p>
+                <p>👆 比出枪势（拇指+食指）并上抬射击</p>
+                <p>⚠️ 避开人脸，击中人脸会失分！</p>
+                <button id="startBtn">开始游戏</button>
+            </div>
+        </div>
+        
+        <!-- 加载界面 -->
+        <div id="loadingScreen">
+            <div class="loadingContent">
+                <div class="spinner"></div>
+                <p id="loadingText">正在初始化...</p>
+                
+                <!-- 进度条 -->
+                <div class="progressContainer">
+                    <div class="progressBar" id="progressBar"></div>
+                </div>
+                <p class="progressPercent" id="progressText">0%</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/game-local.js"></script>
+</body>
+</html>

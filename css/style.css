@@ -1,0 +1,295 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#gameContainer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* 视频层 */
+#video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1); /* 镜像翻转 */
+    z-index: 1;
+}
+
+/* 游戏画布层 */
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    transform: scaleX(-1); /* 镜像翻转匹配视频 */
+}
+
+/* UI层 */
+#uiLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* 分数板 */
+#scoreBoard {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.score {
+    color: #fff;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.score span {
+    color: #4CAF50;
+}
+
+.score:last-child span {
+    color: #f44336;
+}
+
+/* 手势指示器 */
+#gestureIndicator {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    color: #fff;
+}
+
+#gestureIndicator div {
+    margin: 8px 0;
+    font-size: 16px;
+}
+
+#gunStatus.active {
+    color: #4CAF50;
+}
+
+#fireStatus.active {
+    color: #ff9800;
+}
+
+/* 弹药显示 */
+#ammoDisplay {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 30px;
+    letter-spacing: 5px;
+}
+
+/* 开始界面 */
+#startScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+}
+
+.startContent {
+    text-align: center;
+    color: #fff;
+    padding: 40px;
+}
+
+.startContent h1 {
+    font-size: 36px;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.startContent p {
+    font-size: 16px;
+    margin: 15px 0;
+    opacity: 0.9;
+}
+
+#startBtn {
+    margin-top: 30px;
+    padding: 15px 50px;
+    font-size: 20px;
+    background: #fff;
+    color: #667eea;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+#startBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+#startBtn:active {
+    transform: translateY(0);
+}
+
+/* 加载界面 */
+#loadingScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 20;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+}
+
+#loadingScreen.show {
+    display: flex;
+}
+
+.loadingContent {
+    text-align: center;
+    color: #fff;
+    padding: 40px;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 进度条 */
+.progressContainer {
+    width: 280px;
+    height: 10px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 5px;
+    margin: 20px auto;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.progressBar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A, #CDDC39);
+    border-radius: 5px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+.progressPercent {
+    font-size: 20px;
+    color: #4CAF50;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* 人脸区域标记 */
+.faceZone {
+    position: absolute;
+    border: 3px solid rgba(255, 0, 0, 0.5);
+    border-radius: 50%;
+    background: rgba(255, 0, 0, 0.1);
+    pointer-events: none;
+}
+
+/* 击中效果 */
+.hitEffect {
+    animation: hitFlash 0.3s ease-out;
+}
+
+@keyframes hitFlash {
+    0% { background: rgba(255, 0, 0, 0.8); }
+    100% { background: transparent; }
+}
+
+/* 子弹效果 */
+.bullet {
+    position: absolute;
+    width: 10px;
+    height: 30px;
+    background: linear-gradient(to bottom, #ffeb3b, #ff9800);
+    border-radius: 5px;
+    box-shadow: 0 0 20px #ffeb3b;
+}
+
+/* 目标 */
+.target {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: radial-gradient(circle, #ff6b6b, #ee5a24);
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(238, 90, 36, 0.6);
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+    .startContent h1 {
+        font-size: 28px;
+    }
+    
+    .startContent p {
+        font-size: 14px;
+    }
+    
+    #scoreBoard, #gestureIndicator {
+        padding: 10px 15px;
+    }
+    
+    .score, #gestureIndicator div {
+        font-size: 14px;
+    }
+}
