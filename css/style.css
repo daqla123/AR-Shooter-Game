@@ -30,6 +30,7 @@ html, body {
     object-fit: cover;
     transform: scaleX(-1);
     z-index: 1;
+    background: #000;
 }
 
 #gameCanvas {
@@ -40,6 +41,8 @@ html, body {
     height: 100%;
     z-index: 2;
     transform: scaleX(-1);
+    background: transparent;
+    pointer-events: auto;
 }
 
 #uiLayer {

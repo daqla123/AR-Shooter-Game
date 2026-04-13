@@ -49,10 +49,24 @@ const ctx = elements.canvas.getContext('2d');
 
 // ==================== 初始化画布 ====================
 function resizeCanvas() {
-    elements.canvas.width = window.innerWidth;
-    elements.canvas.height = window.innerHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    elements.canvas.width = width;
+    elements.canvas.height = height;
+    
+    // 同时调整视频尺寸
+    if (elements.video) {
+        elements.video.style.width = width + 'px';
+        elements.video.style.height = height + 'px';
+    }
 }
+
+// 监听屏幕旋转和尺寸变化
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => {
+    setTimeout(resizeCanvas, 100);
+});
+
 resizeCanvas();
 
 // ==================== 音效系统 ====================
@@ -643,7 +657,7 @@ function resetGame() {
 
 // ==================== 渲染 ====================
 function draw() {
-    // 清除画布，让摄像头画面透出来
+    // 完全清除画布，让下方的video元素透出来
     ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
     
     // 绘制人脸区域（蓝色边框）
@@ -1039,25 +1053,29 @@ function updateUI() {
 // ==================== 相机初始化 ====================
 async function initCamera() {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const constraints = {
             video: {
                 facingMode: 'user',
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                width: { ideal: window.innerWidth },
+                height: { ideal: window.innerHeight }
             },
             audio: false
-        });
+        };
         
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         elements.video.srcObject = stream;
         
-        return new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
             elements.video.onloadedmetadata = () => {
-                elements.video.play();
-                resolve();
+                elements.video.play().then(() => {
+                    resolve();
+                }).catch(reject);
             };
+            elements.video.onerror = reject;
         });
     } catch (err) {
-        alert('无法访问摄像头，请确保已授予摄像头权限：' + err.message);
+        console.error('摄像头错误:', err);
+        alert('无法访问摄像头，请检查权限设置：' + err.message);
         throw err;
     }
 }

@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>AR 兔子射击游戏</title>
     <!-- MediaPipe Face Detection -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/face_detection.js"></script>
@@ -11,7 +13,7 @@
 <body>
     <div id="gameContainer">
         <!-- 视频层 -->
-        <video id="video" playsinline autoplay muted></video>
+        <video id="video" playsinline webkit-playsinline autoplay muted></video>
         
         <!-- 游戏画布层 -->
         <canvas id="gameCanvas"></canvas>
