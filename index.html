@@ -4,14 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>AR 兔子射击游戏</title>
-    <!-- TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
     <!-- MediaPipe Face Detection -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/face_detection.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.16400290/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js"></script>
-    <!-- MediaPipe Hands -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -35,8 +29,7 @@
             </div>
             
             <div id="gestureIndicator">
-                <div id="gunStatus">🔫 枪势: <span id="gunDetected">未检测</span></div>
-                <div id="fireStatus">🔥 射击: <span id="fireReady">准备</span></div>
+                <div id="fireStatus">🔥 点击屏幕射击</div>
             </div>
             
             <div id="ammoDisplay">
@@ -49,8 +42,8 @@
             <div class="startContent">
                 <h1>🐰 AR 兔子射击游戏</h1>
                 <p>📱 请允许摄像头权限</p>
-                <p>👆 比出枪势（拇指+食指）并上抬射击</p>
-                <p>🥕 兔子会扔萝卜，被击中会扣血！</p>
+                <p>👆 点击屏幕任意位置射击</p>
+                <p>🥕 兔子会扔萝卜，移动头部躲避！</p>
                 <p>🎯 射击消灭兔子得分</p>
                 <button id="startBtn">开始游戏</button>
             </div>

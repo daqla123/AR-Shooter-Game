@@ -42,11 +42,7 @@ const elements = {
     score: document.getElementById('score'),
     health: document.getElementById('health'),
     healthBar: document.getElementById('healthBar'),
-    gunDetected: document.getElementById('gunDetected'),
-    fireReady: document.getElementById('fireReady'),
-    ammo: document.getElementById('ammo'),
-    gunStatus: document.getElementById('gunStatus'),
-    fireStatus: document.getElementById('fireStatus')
+    ammo: document.getElementById('ammo')
 };
 
 const ctx = elements.canvas.getContext('2d');
@@ -1025,12 +1021,15 @@ function updateUI() {
         elements.healthBar.style.backgroundColor = '#f44336';
     }
     
-    elements.gunDetected.textContent = GameState.gunDetected ? '已检测 ✓' : '未检测';
-    elements.fireReady.textContent = GameState.isReloading ? '换弹中...' : 
-                                     GameState.canFire ? '就绪!' : '准备';
+    const fireReady = document.getElementById('fireReady');
+    if (fireReady) {
+        fireReady.textContent = GameState.isReloading ? '换弹中...' : '点击射击';
+    }
     
-    elements.gunStatus.className = GameState.gunDetected ? 'active' : '';
-    elements.fireStatus.className = (GameState.canFire && !GameState.isReloading) ? 'active' : '';
+    const fireStatus = document.getElementById('fireStatus');
+    if (fireStatus) {
+        fireStatus.className = GameState.isReloading ? '' : 'active';
+    }
     
     let ammoStr = '';
     for (let i = 0; i < 5; i++) {
@@ -1077,7 +1076,6 @@ function gameLoop() {
     // 处理MediaPipe输入
     if (elements.video.readyState >= 2) {
         faceDetection.send({ image: elements.video });
-        hands.send({ image: elements.video });
     }
     
     // 更新游戏状态
@@ -1111,7 +1109,6 @@ async function startGame() {
         AudioSys.init();
         await initCamera();
         initFaceDetection();
-        initHands();
         
         // 极速启动
         await new Promise(r => setTimeout(r, 500));
