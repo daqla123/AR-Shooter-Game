@@ -1,7 +1,7 @@
 /**
- * AR 横版兔子射击游戏
- * 使用MediaPipe进行人脸和手势检测
- * 兔子从右侧出现，向左移动，扔萝卜攻击玩家
+ * AR 兔子躲避游戏
+ * 使用MediaPipe检测人脸位置
+ * 人脸变小1/4，兔子从四周出现扔萝卜，玩家移动脸部躲避
  */
 
 // ==================== 游戏状态 ====================
@@ -202,11 +202,21 @@ function initFaceDetection() {
             const faceW = width * scaleX;
             const faceH = height * scaleY;
             
-            // 缩小人脸判定区域（只检测中心区域）
-            const padding = -10;
+            // 人脸区域缩小到原来的1/4（宽高各缩小一半）
+            const scale = 0.5;
+            const smallW = faceW * scale;
+            const smallH = faceH * scale;
+            const smallX = faceX + (faceW - smallW) / 2;
+            const smallY = faceY + (faceH - smallH) / 2;
+            
             GameState.faceBounds = {
-                x: faceX - padding,
-                y: faceY - padding,
+                x: smallX,
+                y: smallY,
+                width: smallW,
+                height: smallH,
+                centerX: smallX + smallW / 2,
+                centerY: smallY + smallH / 2
+            };
                 width: faceW + padding * 2,
                 height: faceH + padding * 2,
                 centerX: faceX + faceW / 2,
