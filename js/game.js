@@ -198,6 +198,78 @@ function initFaceDetection() {
 // ==================== MediaPipe 手势检测 ====================
 let hands = null;
 
+// ==================== MediaPipe 人脸检测 ====================
+let faceDetection = null;
+
+function initFaceDetection() {
+    faceDetection = new FaceDetection({
+        locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+        }
+    });
+    
+    faceDetection.setOptions({
+        model: 'short',
+        minDetectionConfidence: 0.5
+    });
+    
+    faceDetection.onResults((results) => {
+        GameState.faceDetected = results.detections.length > 0;
+        if (results.detections.length > 0) {
+            const detection = results.detections[0];
+            const { xMin, yMin, width, height } = detection.boundingBox;
+            
+            // 转换为屏幕坐标（考虑镜像）
+            const canvasWidth = elements.canvas.width;
+            const canvasHeight = elements.canvas.height;
+            
+            // 视频通常是4:3或16:9，需要适配到全屏
+            const videoAspect = elements.video.videoWidth / elements.video.videoHeight;
+            const screenAspect = canvasWidth / canvasHeight;
+            
+            let scaleX, scaleY, offsetX = 0, offsetY = 0;
+            
+            if (videoAspect > screenAspect) {
+                scaleY = canvasHeight;
+                scaleX = scaleY * videoAspect;
+                offsetX = (canvasWidth - scaleX) / 2;
+            } else {
+                scaleX = canvasWidth;
+                scaleY = scaleX / videoAspect;
+                offsetY = (canvasHeight - scaleY) / 2;
+            }
+            
+            // 镜像翻转x坐标
+            const faceX = offsetX + (1 - xMin - width) * scaleX;
+            const faceY = offsetY + yMin * scaleY;
+            const faceW = width * scaleX;
+            const faceH = height * scaleY;
+            
+            // 扩大人脸区域（增加判定范围）
+            const padding = 20;
+            GameState.faceBounds = {
+                x: faceX - padding,
+                y: faceY - padding,
+                width: faceW + padding * 2,
+                height: faceH + padding * 2,
+                centerX: faceX + faceW / 2,
+                centerY: faceY + faceH / 2
+            };
+        } else {
+            // 如果检测不到脸，使用屏幕左侧默认位置
+            const canvasHeight = elements.canvas.height;
+            GameState.faceBounds = {
+                x: 50,
+                y: canvasHeight / 2 - 50,
+                width: 100,
+                height: 100,
+                centerX: 100,
+                centerY: canvasHeight / 2
+            };
+        }
+    });
+}
+
 function initHands() {
     hands = new Hands({
         locateFile: (file) => {
@@ -311,9 +383,18 @@ function reload() {
 
 // ==================== 子弹系统 ====================
 function createBullet() {
-    // 横版：从左侧发射，向右飞行
-    const startX = 60; // 左侧玩家位置
-    const startY = elements.canvas.height / 2;
+    // 从人脸位置发射子弹（横版向右飞行）
+    let startX, startY;
+    
+    if (GameState.faceBounds) {
+        // 从人脸中心发射
+        startX = GameState.faceBounds.centerX;
+        startY = GameState.faceBounds.centerY;
+    } else {
+        // 默认从左侧发射
+        startX = 60;
+        startY = elements.canvas.height / 2;
+    }
     
     GameState.bullets.push({
         x: startX,
@@ -436,12 +517,20 @@ function updateRabbits() {
 
 // ==================== 萝卜系统 ====================
 function throwCarrot(rabbit) {
-    // 萝卜朝左侧玩家方向扔（不管有没有检测到人脸）
-    const canvasHeight = elements.canvas.height;
-    const targetX = 80; // 玩家位置在左侧
-    const targetY = canvasHeight / 2 + (Math.random() - 0.5) * 200; // 随机高度
-    
+    // 萝卜朝检测到的人脸位置扔
     const rabbitY = rabbit.y + Math.sin(rabbit.hopOffset) * rabbit.hopHeight;
+    
+    // 获取目标位置（人脸中心或默认位置）
+    let targetX, targetY;
+    if (GameState.faceBounds) {
+        targetX = GameState.faceBounds.centerX;
+        targetY = GameState.faceBounds.centerY;
+    } else {
+        // 默认位置：屏幕左侧中央
+        targetX = 80;
+        targetY = elements.canvas.height / 2;
+    }
+    
     const dx = targetX - rabbit.x;
     const dy = targetY - rabbitY;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -484,20 +573,30 @@ function updateCarrots() {
 }
 
 function checkCarrotHitFace(carrot) {
-    // 横版：检测萝卜是否击中左侧玩家区域
-    const playerX = 80; // 玩家在左侧
-    const playerY = elements.canvas.height / 2;
-    const playerRadius = 60; // 玩家判定区域
+    // 检测萝卜是否击中人脸区域
+    let hitX, hitY, hitRadius;
     
-    const dx = carrot.x - playerX;
-    const dy = carrot.y - playerY;
+    if (GameState.faceBounds) {
+        // 使用检测到的人脸位置
+        hitX = GameState.faceBounds.centerX;
+        hitY = GameState.faceBounds.centerY;
+        hitRadius = Math.min(GameState.faceBounds.width, GameState.faceBounds.height) / 2;
+    } else {
+        // 默认位置：屏幕左侧
+        hitX = 80;
+        hitY = elements.canvas.height / 2;
+        hitRadius = 60;
+    }
+    
+    const dx = carrot.x - hitX;
+    const dy = carrot.y - hitY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     
-    // 萝卜击中玩家判定区域
-    if (dist < playerRadius + carrot.size) {
+    // 萝卜击中判定
+    if (dist < hitRadius + carrot.size) {
         GameState.health = Math.max(0, GameState.health - 15);
         AudioSys.playCarrotHit();
-        showHitEffect(playerX, playerY, 'damage');
+        showHitEffect(hitX, hitY, 'damage');
         updateUI();
         
         // 检查游戏结束
