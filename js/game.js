@@ -643,12 +643,10 @@ function resetGame() {
 
 // ==================== 渲染 ====================
 function draw() {
+    // 清除画布，让摄像头画面透出来
     ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
     
-    // 绘制背景网格（横版游戏风格）
-    drawBackground();
-    
-    // 绘制人脸区域
+    // 绘制人脸区域（蓝色边框）
     if (GameState.faceBounds) {
         drawFaceArea();
     }
