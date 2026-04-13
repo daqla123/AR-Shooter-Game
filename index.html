@@ -6,9 +6,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>AR 兔子射击游戏</title>
-    <!-- MediaPipe -->
+    <!-- MediaPipe 人脸检测 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/face_detection.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
+    <script>
+        // 清理 face_detection 遗留的全局 Module，防止 hands WASM 加载冲突
+        if (typeof window.Module !== 'undefined') {
+            delete window.Module;
+        }
+    </script>
+    <!-- MediaPipe 手势检测 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1673529176/hands.js"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -32,11 +39,7 @@
             </div>
             
             <div id="gestureIndicator">
-                <div id="fireStatus">🔥 点击屏幕射击</div>
-            </div>
-            
-            <div id="ammoDisplay">
-                <span id="ammo">🔫🔫🔫🔫🔫</span>
+                <div id="fireStatus">☝️ 食指对准兔子0.5秒消灭</div>
             </div>
         </div>
         
@@ -45,9 +48,9 @@
             <div class="startContent">
                 <h1>🐰 AR 兔子射击游戏</h1>
                 <p>📱 请允许摄像头权限</p>
-                <p>👆 用手指指住兔子0.5秒消灭它</p>
+                <p>☝️ 举起食指对准兔子，停留0.5秒消灭它</p>
                 <p>🥕 兔子会扔萝卜，移动头部躲避！</p>
-                <p>🎯 射击消灭兔子得分</p>
+                <p>🏆 消灭兔子得分，躲避萝卜保血量</p>
                 <button id="startBtn">开始游戏</button>
             </div>
         </div>
